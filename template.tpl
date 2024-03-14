@@ -856,7 +856,7 @@ function getPinterestPixelEventName(pinterestApiEventName) {
 }
 
 function isAlreadyHashed(input) {
-  return input && input.match("^[A-Fa-f0-9]{64}$") != null;
+  return input && makeString(input).match("^[A-Fa-f0-9]{64}$") != null;
 }
 
 function hashData(key, input) {
