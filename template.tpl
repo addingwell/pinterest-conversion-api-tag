@@ -627,7 +627,7 @@ event.custom_data.content_category = (eventData.items && eventData.items.length 
 event.custom_data.content_brand = (eventData.items && eventData.items.length === 1) ? eventData.items[0].item_brand : undefined;
 event.custom_data.contents = getContentFromItems(eventData.items);
 event.custom_data.num_items = getItemsQuantity(eventData.items);
-event.custom_data.order_id = eventData.transaction_id;
+event.custom_data.order_id = makeString(eventData.transaction_id);
 event.custom_data.search_string = eventData.search_term;
 
 // OVERRIDE DATA WITH CONFIGURATION
