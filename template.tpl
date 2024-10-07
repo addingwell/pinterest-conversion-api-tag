@@ -970,7 +970,7 @@ function getContentIdsFromItems(items) {
   if (!items) return undefined;
   const idField = getItemField('item_id');
   return items.map((item) => {
-    return item[idField];
+    return makeString(item[idField]);
   });
 }
 
