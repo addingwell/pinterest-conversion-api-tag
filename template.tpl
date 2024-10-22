@@ -287,6 +287,47 @@ ___TEMPLATE_PARAMETERS___
     "help": "See \u003ca href\u003d\"https://s.pinimg.com/ct/docs/conversions_api/dist/v3.html\" target\u003d\"_blank\"\u003ethis documentation\u003c/a\u003e for more details on what data parameters you can override."
   },
   {
+    "type": "GROUP",
+    "name": "itemDataListGroup",
+    "displayName": "Items Data",
+    "groupStyle": "ZIPPY_CLOSED",
+    "subParams": [
+      {
+        "type": "SIMPLE_TABLE",
+        "name": "itemDataList",
+        "displayName": "Update default Item field",
+        "simpleTableColumns": [
+          {
+            "defaultValue": "",
+            "displayName": "Property Name",
+            "name": "name",
+            "type": "SELECT",
+            "selectItems": [
+              {
+                "value": "id",
+                "displayValue": "id"
+              },
+              {
+                "value": "quantity",
+                "displayValue": "quantity"
+              },
+              {
+                "value": "item_price",
+                "displayValue": "item_price"
+              }
+            ]
+          },
+          {
+            "defaultValue": "",
+            "displayName": "Property Field",
+            "name": "field",
+            "type": "TEXT"
+          }
+        ]
+      }
+    ]
+  },
+  {
     "displayName": "User Data",
     "name": "userDataListGroup",
     "groupStyle": "ZIPPY_CLOSED",
@@ -603,15 +644,15 @@ event.user_data.client_user_agent = (event.action_source === 'web') ? eventData.
 event.user_data.external_id = eventData.user_id;
 event.user_data.hashed_maids = eventData.hashed_maids;
 event.user_data.click_id = eventData.click_id;
-event.user_data.em = eventData.user_data != null ? eventData.user_data.email_address : undefined;
-event.user_data.ph = eventData.user_data != null ? eventData.user_data.phone_number : undefined;
+event.user_data.em = (eventData.user_data != null) ? eventData.user_data.email_address || eventData.user_data.sha256_email_address || eventData.user_data.email : undefined;
+event.user_data.ph = (eventData.user_data != null) ? eventData.user_data.phone_number || eventData.user_data.sha256_phone_number : undefined;
 event.user_data.ge = eventData.user_data != null ? eventData.user_data.gender : undefined;
 event.user_data.db = eventData.user_data != null ? eventData.user_data.db : undefined;
 
 // ADDRESS DATA
 const addressData = (eventData.user_data != null && eventData.user_data.address != null) ? (eventData.user_data.address[0] || eventData.user_data.address) : {};
-event.user_data.ln = addressData.last_name;
-event.user_data.fn = addressData.first_name;
+event.user_data.ln = addressData.last_name || addressData.sha256_last_name;
+event.user_data.fn = addressData.first_name || addressData.sha256_first_name;
 event.user_data.ct = addressData.city;
 event.user_data.st = addressData.region;
 event.user_data.zp = addressData.postal_code;
@@ -627,7 +668,7 @@ event.custom_data.content_category = (eventData.items && eventData.items.length 
 event.custom_data.content_brand = (eventData.items && eventData.items.length === 1) ? eventData.items[0].item_brand : undefined;
 event.custom_data.contents = getContentFromItems(eventData.items);
 event.custom_data.num_items = getItemsQuantity(eventData.items);
-event.custom_data.order_id = eventData.transaction_id;
+event.custom_data.order_id = makeString(eventData.transaction_id);
 event.custom_data.search_string = eventData.search_term;
 
 // OVERRIDE DATA WITH CONFIGURATION
@@ -735,15 +776,15 @@ sendHttpRequest(
     }
 
     if (statusCode >= 200 && statusCode < 300) {
-      
+
       if (!!data.sendPixelRequest) {
-        
+
         let params = "?event=" + getPinterestPixelEventName(event.event_name) +
           addParam("tid", enc(data.tagId)) +
           addParam("event_id", event.event_id);
 
         if (event.custom_data) {
-          params += 
+          params +=
             addParam("ed[value]", event.custom_data.value) +
             addParam("ed[order_quantity]", event.custom_data.num_items) +
             addParam("ed[currency]", event.custom_data.currency) +
@@ -755,7 +796,7 @@ sendHttpRequest(
           for (var i = 0; i < eventData.items.length; i++) {
             params +=
               addParam("ed[line_items][" + i + "][product_name]", eventData.items[i].item_name) +
-              addParam("ed[line_items][" + i + "][product_id]", eventData.items[i].item_id) +
+              addParam("ed[line_items][" + i + "][product_id]", getContentIdFromItem(eventData.items[i])) +
               addParam("ed[line_items][" + i + "][product_category]", eventData.items[i].item_category) +
               addParam("ed[line_items][" + i + "][product_variant]", eventData.items[i].item_variant) +
               addParam("ed[line_items][" + i + "][product_price]", eventData.items[i].price) +
@@ -778,7 +819,7 @@ sendHttpRequest(
             addParam("pd[country]", event.user_data.country) +
             addParam("cd[external_id]", event.user_data.external_id);
         }
-  
+
         if (data.customDataList) {
           data.customDataList.forEach((d) => {
             params += addParam("ed[" + d.name + "]", d.value);
@@ -787,7 +828,7 @@ sendHttpRequest(
 
         sendPixelFromBrowser("https://ct.pinterest.com/v3/" + params);
       }
-        
+
       data.gtmOnSuccess();
     } else {
       data.gtmOnFailure();
@@ -856,7 +897,7 @@ function getPinterestPixelEventName(pinterestApiEventName) {
 }
 
 function isAlreadyHashed(input) {
-  return input && input.match("^[A-Fa-f0-9]{64}$") != null;
+  return input && makeString(input).match("^[A-Fa-f0-9]{64}$") != null;
 }
 
 function hashData(key, input) {
@@ -891,22 +932,52 @@ function hashAndReturnAsArray(key, value) {
   return [hashedValue];
 }
 
+function getItemField(defaultField) {
+  let result = defaultField;
+
+  const map = {
+    item_id: 'id',
+    price: 'item_price',
+    quantity: 'quantity'
+  };
+
+  if (data.itemDataList) {
+    data.itemDataList.forEach(d => {
+      if (map[defaultField] === d.name) {
+        result = d.field;
+      }
+    });
+  }
+
+  return result;
+}
+
 function getContentFromItems(items) {
   if (!items) return undefined;
+  const idField = getItemField('item_id');
+  const priceField = getItemField('price');
+  const quantityField = getItemField('quantity');
   return items.map((item) => {
     return {
-      id: makeString(item.item_id),
-      item_price: makeString(item.price),
-      quantity: item.quantity,
+      id: makeString(item[idField]),
+      item_price: makeString(item[priceField]),
+      quantity: item[quantityField],
     };
   });
 }
 
 function getContentIdsFromItems(items) {
   if (!items) return undefined;
+  const idField = getItemField('item_id');
   return items.map((item) => {
-    return item.item_id;
+    return makeString(item[idField]);
   });
+}
+
+function getContentIdFromItem(item) {
+  if (!item) return undefined;
+  const idField = getItemField('item_id');
+    return item[idField];
 }
 
 function getItemsQuantity(items) {
@@ -916,7 +987,7 @@ function getItemsQuantity(items) {
   items.forEach((item) => {
     qty += item.quantity || 1;
   });
-  
+
   return qty;
 }
 
@@ -924,9 +995,12 @@ function getValueFromItems(items) {
   if (!items) return undefined;
   let value = 0;
 
+  const priceField = getItemField('price');
+  const quantityField = getItemField('quantity');
+
   items.forEach((item) => {
-    let price = makeNumber(item.price);
-    value += item.quantity ? makeNumber(item.quantity) * price : price;
+    let price = makeNumber(item[priceField]);
+    value += item[quantityField] ? makeNumber(item[quantityField]) * price : price;
   });
 
   return makeString(value);
