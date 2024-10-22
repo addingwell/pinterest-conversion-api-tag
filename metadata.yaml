@@ -1,5 +1,7 @@
 homepage: "https://www.addingwell.com"
 documentation: "https://docs.addingwell.com/pinterest-capi/benefits"
 versions:
+  - sha: 07b0c772ad30558cb2e23658f1014e59a925b053
+    changeNotes: Accept gallery terms
   - sha: f85b62334945d9679e770f2f419c3afc7f02f9bb
     changeNotes: Initial release
