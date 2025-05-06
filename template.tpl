@@ -564,6 +564,10 @@ const generateRandom = require("generateRandom");
 const encodeUriComponent = require("encodeUriComponent");
 const sendPixelFromBrowser = require("sendPixelFromBrowser");
 const makeNumber = require("makeNumber");
+const setCookie = require("setCookie");
+const getCookieValues = require('getCookieValues');
+const computeEffectiveTldPlusOne = require('computeEffectiveTldPlusOne');
+const parseUrl = require('parseUrl');
 
 const isLoggingEnabled = determinateIsLoggingEnabled();
 const traceId = isLoggingEnabled ? getRequestHeader("trace-id") : undefined;
@@ -634,6 +638,30 @@ const EVENT_NAME_PIXEL_MAPPINGS = {
   custom: "Custom",
 };
 
+const COOKIE_CLICK_ID = "_epik";
+let clickId = getCookieValues(COOKIE_CLICK_ID)[0] || eventData.click_id;
+
+const url = eventData.page_location || getRequestHeader('referer');
+if (url) {
+  const urlParsed = parseUrl(url);
+  if (urlParsed && urlParsed.searchParams.epik) {
+     clickId = urlParsed.searchParams.epik;
+  }
+}
+
+const cookieOptions = {
+    domain: 'auto',
+    path: '/',
+    samesite: 'Lax',
+    secure: true,
+    'max-age': 31536000,
+    HttpOnly: false
+};
+
+if(clickId) {
+    setCookie(COOKIE_CLICK_ID, clickId, cookieOptions);
+}
+
 // Here we are constructing the request URL for the Pinterest API.
 let postUrl = "https://api.pinterest.com/v5/ad_accounts/" + data.advertiserId + "/events";
 
@@ -651,7 +679,7 @@ event.user_data.client_ip_address = (event.action_source === 'web') ? eventData.
 event.user_data.client_user_agent = (event.action_source === 'web') ? eventData.user_agent : undefined;
 event.user_data.external_id = eventData.user_id;
 event.user_data.hashed_maids = eventData.hashed_maids;
-event.user_data.click_id = eventData.click_id;
+event.user_data.click_id = clickId;
 event.user_data.em = (eventData.user_data != null) ? eventData.user_data.email_address || eventData.user_data.sha256_email_address || eventData.user_data.email : undefined;
 event.user_data.ph = (eventData.user_data != null) ? eventData.user_data.phone_number || eventData.user_data.sha256_phone_number : undefined;
 event.user_data.ge = eventData.user_data != null ? eventData.user_data.gender : undefined;
@@ -676,7 +704,9 @@ event.custom_data.content_category = (eventData.items && eventData.items.length 
 event.custom_data.content_brand = (eventData.items && eventData.items.length === 1) ? eventData.items[0].item_brand : undefined;
 event.custom_data.contents = getContentFromItems(eventData.items);
 event.custom_data.num_items = getItemsQuantity(eventData.items);
-event.custom_data.order_id = makeString(eventData.transaction_id);
+if(eventData.transaction_id) {
+  event.custom_data.order_id = makeString(eventData.transaction_id);
+}
 event.custom_data.search_string = eventData.search_term;
 
 // OVERRIDE DATA WITH CONFIGURATION
@@ -815,6 +845,7 @@ sendHttpRequest(
 
         if (event.user_data) {
           params +=
+            addParam("pd[epik]", event.user_data.click_id) +
             addParam("pd[em]", event.user_data.em) +
             addParam("pd[ph]", event.user_data.ph) +
             addParam("pd[ge]", event.user_data.ge) +
@@ -825,7 +856,30 @@ sendHttpRequest(
             addParam("pd[st]", event.user_data.st) +
             addParam("pd[zp]", event.user_data.zp) +
             addParam("pd[country]", event.user_data.country) +
-            addParam("cd[external_id]", event.user_data.external_id);
+            addParam("pd[external_id]", event.user_data.external_id);
+        }
+
+        if(eventData.screen_resolution) {
+          if(eventData.screen_resolution.split('x').length == 2) {
+             params +=
+               addParam("ad[sw]", eventData.screen_resolution.split('x')[0]) +
+               addParam("ad[sh]", eventData.screen_resolution.split('x')[1]);
+          }
+        }
+
+        params +=
+          addParam("ad[loc]", eventData.page_location) +
+          addParam("ad[ref]", eventData.page_referrer);
+
+        if(eventData.client_hints) {
+          params +=
+            addParam("ad[architecture]", eventData.client_hints.architecture) +
+            addParam("ad[bitness]", eventData.client_hints.bitness) +
+            addParam("ad[brands]", JSON.stringify(eventData.client_hints.brands)) +
+            addParam("ad[mobile]", eventData.client_hints.mobile) +
+            addParam("ad[platform]", eventData.client_hints.platform) +
+            addParam("ad[platformVersion]", eventData.client_hints.platform_version) +
+            addParam("ad[uaFullVersion]", eventData.client_hints.full_version_list[0].version);
         }
 
         if (data.customDataList) {
@@ -1212,6 +1266,108 @@ ___SERVER_PERMISSIONS___
               {
                 "type": 1,
                 "string": "https://ct.pinterest.com/"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "clientAnnotations": {
+      "isEditedByUser": true
+    },
+    "isRequired": true
+  },
+  {
+    "instance": {
+      "key": {
+        "publicId": "get_cookies",
+        "versionId": "1"
+      },
+      "param": [
+        {
+          "key": "cookieAccess",
+          "value": {
+            "type": 1,
+            "string": "specific"
+          }
+        },
+        {
+          "key": "cookieNames",
+          "value": {
+            "type": 2,
+            "listItem": [
+              {
+                "type": 1,
+                "string": "_epik"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "clientAnnotations": {
+      "isEditedByUser": true
+    },
+    "isRequired": true
+  },
+  {
+    "instance": {
+      "key": {
+        "publicId": "set_cookies",
+        "versionId": "1"
+      },
+      "param": [
+        {
+          "key": "allowedCookies",
+          "value": {
+            "type": 2,
+            "listItem": [
+              {
+                "type": 3,
+                "mapKey": [
+                  {
+                    "type": 1,
+                    "string": "name"
+                  },
+                  {
+                    "type": 1,
+                    "string": "domain"
+                  },
+                  {
+                    "type": 1,
+                    "string": "path"
+                  },
+                  {
+                    "type": 1,
+                    "string": "secure"
+                  },
+                  {
+                    "type": 1,
+                    "string": "session"
+                  }
+                ],
+                "mapValue": [
+                  {
+                    "type": 1,
+                    "string": "_epik"
+                  },
+                  {
+                    "type": 1,
+                    "string": "*"
+                  },
+                  {
+                    "type": 1,
+                    "string": "*"
+                  },
+                  {
+                    "type": 1,
+                    "string": "any"
+                  },
+                  {
+                    "type": 1,
+                    "string": "any"
+                  }
+                ]
               }
             ]
           }

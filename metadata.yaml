@@ -1,6 +1,8 @@
 homepage: "https://www.addingwell.com"
 documentation: "https://docs.addingwell.com/pinterest-capi/benefits"
 versions:
+  - sha: db265ffcf10edb6aa5208c90041622104dd5b093
+    changeNotes: Add clickId + Missing pixel parameters
   - sha: 184bc52c65e30e9e87cf109d9c933ede02b28f7a
     changeNotes: Update template name
   - sha: 07b0c772ad30558cb2e23658f1014e59a925b053
