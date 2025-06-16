@@ -878,8 +878,11 @@ sendHttpRequest(
             addParam("ad[brands]", JSON.stringify(eventData.client_hints.brands)) +
             addParam("ad[mobile]", eventData.client_hints.mobile) +
             addParam("ad[platform]", eventData.client_hints.platform) +
-            addParam("ad[platformVersion]", eventData.client_hints.platform_version) +
-            addParam("ad[uaFullVersion]", eventData.client_hints.full_version_list[0].version);
+            addParam("ad[platformVersion]", eventData.client_hints.platform_version);
+
+            if(eventData.client_hints.full_version_list && eventData.client_hints.full_version_list.length > 0) {
+              params += addParam("ad[uaFullVersion]", eventData.client_hints.full_version_list[0].version);
+            }
         }
 
         if (data.customDataList) {
