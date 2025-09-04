@@ -613,17 +613,17 @@ const EVENT_NAME_MAPPINGS = {
   viewcontent: "view_category",
   view_item_list: "view_category",
   watchvideo: "watch_video",
-  add_payment_info: "custom",
-  add_shipping_info: "custom",
-  add_to_wishlist: "custom",
-  begin_checkout: "custom",
+  add_payment_info: "add_payment_info",
+  add_shipping_info: "initiate_checkout",
+  add_to_wishlist: "add_to_wishlist",
+  begin_checkout: "initiate_checkout",
   refund: "custom",
   remove_from_cart: "custom",
-  select_item: "custom",
-  select_promotion: "custom",
+  select_item: "view_content",
+  select_promotion: "view_content",
   view_cart: "custom",
-  view_item: "page_visit",
-  view_promotion: "custom",
+  view_item: "view_content",
+  view_promotion: "view_content",
 };
 
 const EVENT_NAME_PIXEL_MAPPINGS = {
@@ -635,6 +635,10 @@ const EVENT_NAME_PIXEL_MAPPINGS = {
   signup: "Signup",
   view_category: "ViewCategory",
   watch_video: "WatchVideo",
+  view_content: "ViewContent",
+  initiate_checkout: "InitiateCheckout",
+  add_payment_info: "AddPaymentInfo",
+  add_to_wishlist: "AddToWishlist",
   custom: "Custom",
 };
 
