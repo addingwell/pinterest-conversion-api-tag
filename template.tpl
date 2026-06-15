@@ -614,16 +614,16 @@ const EVENT_NAME_MAPPINGS = {
   view_item_list: "view_category",
   watchvideo: "watch_video",
   add_payment_info: "add_payment_info",
-  add_shipping_info: "initiate_checkout",
+  add_shipping_info: "custom",
   add_to_wishlist: "add_to_wishlist",
   begin_checkout: "initiate_checkout",
   refund: "custom",
   remove_from_cart: "custom",
-  select_item: "view_content",
-  select_promotion: "view_content",
+  select_item: "custom",
+  select_promotion: "custom",
   view_cart: "custom",
   view_item: "view_content",
-  view_promotion: "view_content",
+  view_promotion: "custom",
 };
 
 const EVENT_NAME_PIXEL_MAPPINGS = {
