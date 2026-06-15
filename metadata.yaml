@@ -1,6 +1,8 @@
 homepage: "https://www.addingwell.com"
 documentation: "https://docs.addingwell.com/pinterest-capi/benefits"
 versions:
+  - sha: b9afdb1bb2f2399d083ea6f8c2ebf20bba7c4c8b
+    changeNotes: Add generic events
   - sha: e07eb3676f304aeb1e34ba9b7f48b674d3a66278
     changeNotes: Fix full_version_list data
   - sha: db265ffcf10edb6aa5208c90041622104dd5b093
